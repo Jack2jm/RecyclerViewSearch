@@ -1,7 +1,13 @@
 package com.jack.recyclerviewsearchj;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.support.v7.widget.RecyclerView;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.TextAppearanceSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +21,7 @@ import com.bumptech.glide.request.RequestOptions;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.MyViewHolder>
         implements Filterable {
@@ -22,6 +29,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.MyView
     private List<Contact> contactList;
     private List<Contact> contactListFiltered;
     private ContactsAdapterListener listener;
+    private String mSearchText;
 
     public class MyViewHolder extends RecyclerView.ViewHolder {
         public TextView name, phone;
@@ -62,7 +70,25 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.MyView
     @Override
     public void onBindViewHolder(MyViewHolder holder, final int position) {
         final Contact contact = contactListFiltered.get(position);
-        holder.name.setText(contact.getName());
+
+        // highlight search text
+        if (mSearchText != null && !mSearchText.isEmpty()) {
+            int startPos = contact.getName().toLowerCase(Locale.US).indexOf(mSearchText.toLowerCase(Locale.US));
+            int endPos = startPos + mSearchText.length();
+
+            if (startPos != -1) {
+                Spannable spannable = new SpannableString(contact.getName());
+                ColorStateList blueColor = new ColorStateList(new int[][]{new int[]{}}, new int[]{Color.BLUE});
+                TextAppearanceSpan highlightSpan = new TextAppearanceSpan(null, Typeface.NORMAL, -1, blueColor, null);
+                spannable.setSpan(highlightSpan, startPos, endPos, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                holder.name.setText(spannable);
+            } else {
+                holder.name.setText(contact.getName());
+            }
+        } else {
+            holder.name.setText(contact.getName());
+        }
+
         holder.phone.setText(contact.getPhone());
 
         Glide.with(context)
@@ -81,6 +107,8 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.MyView
         return new Filter() {
             @Override
             protected FilterResults performFiltering(CharSequence charSequence) {
+                String prefixString = charSequence.toString().toLowerCase();
+                mSearchText = prefixString;
                 String charString = charSequence.toString();
                 if (charString.isEmpty()) {
                     contactListFiltered = contactList;
